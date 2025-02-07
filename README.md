@@ -6,3 +6,12 @@ This utility implements two calls: register an invocation (save-invocation mode)
 
 ### Usage
 Possible option of integration of shnotify into your zsh config is shown in zsrch-hook-example.txt file
+
+### Nearest plans
+ - [ ] Support notifications with Telegram bot
+ - [ ] Support Linux notifications with CGO libnotify
+ - [ ] Support direct call to setup a hook on a single command execution
+ - [ ] Abstract notifiers
+ - [ ] Abstract storage (support sqlite instead of OS filesystem for example)
+ - [ ] Support allow lists and ban lists for the programs
+ - [ ] Scan executing line for secrets and prevent them to be stored and included into the notification
