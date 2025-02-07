@@ -1,0 +1,13 @@
+NOTIFIER=/home/oclaw/projects/pet/shellcmd-tracker/shellcmd-tracker
+
+preexec() {
+	__ZSH_NOTIFY_CALL_CMD=$($NOTIFIER save-invocation --shell-line="$1")
+	#TODO handle non-zero retcode
+}
+
+precmd() {
+	if [ -z ${__ZSH_NOTIFY_CALL_CMD+x} ]; then
+		$NOTIFIER notify --invocation-id=$__ZSH_NOTIFY_CALL_CMD
+		unset __ZSH_NOTIFY_CALL_CMD
+	fi
+}
