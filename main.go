@@ -7,61 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
 	"strconv"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
-
-type NotificationType string
-
-const (
-	NotificationCLI      NotificationType = "cli"      // trivial notification putting the text into the command line
-	NotificatonOSPush                     = "os-push"  // GUI OS notification (libnotify for linux)
-	NotificationTelegram                  = "telegram" // Notification published into the telegram bot
-	// feel free to put here any type of supported (or proxied) notification
-)
-
-type NotificationConditions struct {
-	RunLongerThanSec *int64 `yaml:"run_longer_than_sec"` // TODO use time.ParseDuration() for unmarshalling from yaml
-}
-
-type Notification struct {
-	Type       NotificationType       `yaml:"type"`
-	Conditions NotificationConditions `yaml:"conditions"`
-}
-
-type ShellTrackerConfig struct {
-	DirPath             string         `yaml:"dir_path"`               // directory to store shell invocations
-	CleanupEnabled      bool           `yaml:"cleanup_enabled"`        // if enabled service will manually delete the invocations
-	TrackProcsBanList   []string       `yaml:"track_procs_ban_list"`   // do not track the binaries from the list
-	TrackProcsAllowList []string       `yaml:"track_procs_allow_list"` // track only the binaries from the list
-	Notifications       []Notification `yaml:"notifications"`
-	// TODO notification configs
-	// TODO garbage collection settings
-}
-
-func DefaultShellTrackerConfig() ShellTrackerConfig {
-
-	const dirPath = "shell-tracker"
-
-	var timeout int64 = 30 // seconds
-
-	return ShellTrackerConfig{
-		DirPath:        path.Join(os.TempDir(), dirPath),
-		CleanupEnabled: true,
-		Notifications: []Notification{
-			{
-				Type: NotificationCLI,
-				Conditions: NotificationConditions{
-					RunLongerThanSec: &timeout,
-				},
-			},
-		},
-	}
-}
 
 type ShellInvocationRecord struct {
 	InvocationID         string `json:"invocation_id"`
@@ -69,17 +19,6 @@ type ShellInvocationRecord struct {
 	ShellLine            string `json:"cmd_text"`
 	Timestamp            int64  `json:"started_at"`
 	ExternalInvocationID string `json:"ext_invocation_id"`
-}
-
-type Clock interface {
-	NowUnix() int64
-}
-
-type defaultClock struct{}
-
-func (*defaultClock) NowUnix() int64 {
-	now := time.Now()
-	return now.Unix()
 }
 
 type InvocationIDGen func() (string, error)
