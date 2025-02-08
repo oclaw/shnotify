@@ -16,3 +16,8 @@ Possible option of integration of shnotify into your zsh config is shown in zsrc
  - [ ] Support non-file storage for invocations (sqlite for example)
  - [ ] Support allow lists and ban lists for the programs
  - [ ] Scan executing line for secrets and prevent them to be stored and included into the notification
+
+### Source packages
+ - Linux OS push notifications (CGO required) - https://github.com/GNOME/libnotify
+ - Shell parser - https://github.com/mvdan/sh
+ - Notifiers - https://github.com/nikoksr/notify
