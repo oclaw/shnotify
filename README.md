@@ -12,6 +12,7 @@ Possible option of integration of shnotify into your zsh config is shown in zsrc
  - [ ] Support Linux notifications with CGO libnotify
  - [ ] Support direct call to setup a hook on a single command execution
  - [ ] Abstract notifiers
- - [ ] Abstract storage (support sqlite instead of OS filesystem for example)
+ - [x] Abstract storage
+ - [ ] Support non-file storage for invocations (sqlite for example)
  - [ ] Support allow lists and ban lists for the programs
  - [ ] Scan executing line for secrets and prevent them to be stored and included into the notification

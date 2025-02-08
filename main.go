@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -48,11 +47,11 @@ func DefaultShellTrackerConfig() ShellTrackerConfig {
 
 	const dirPath = "shell-tracker"
 
-	var timeout int64 = 60 // 1min
+	var timeout int64 = 30 // seconds
 
 	return ShellTrackerConfig{
 		DirPath:        path.Join(os.TempDir(), dirPath),
-		CleanupEnabled: false,
+		CleanupEnabled: true,
 		Notifications: []Notification{
 			{
 				Type: NotificationCLI,
@@ -100,15 +99,27 @@ var uuidInvocationGen = InvocationGenFromStringer(uuid.NewUUID)
 type shellTracker struct {
 	config          *ShellTrackerConfig
 	clock           Clock
+	storage         InvocationStorage
 	invocationIDGen InvocationIDGen
 }
 
-func NewShellTracker(cfg *ShellTrackerConfig, clock Clock, invocationGen func() (string, error)) *shellTracker {
+func NewShellTracker(
+	cfg *ShellTrackerConfig,
+	clock Clock,
+	invocationGen InvocationIDGen,
+) (*shellTracker, error) {
+
+	storage, err := NewFsInvocationStorage(cfg.DirPath)
+	if err != nil {
+		return nil, err
+	}
+
 	return &shellTracker{
 		config:          cfg,
+		storage:         storage,
 		clock:           clock,
 		invocationIDGen: invocationGen,
-	}
+	}, nil
 }
 
 func Ignore(err error, toIgnore ...error) error {
@@ -121,14 +132,6 @@ func Ignore(err error, toIgnore ...error) error {
 		}
 	}
 	return err
-}
-
-func (st *shellTracker) Start(ctx context.Context) error {
-	if err := os.Mkdir(st.config.DirPath, os.ModePerm); Ignore(err, os.ErrExist) != nil {
-		return err
-	}
-
-	return nil
 }
 
 type preprocessedCommand struct {
@@ -155,42 +158,7 @@ func (st *shellTracker) getExtInvocationID(rec *ShellInvocationRecord) (string, 
 	return hex.EncodeToString(ret), nil
 }
 
-func (st *shellTracker) storeInvocation(rec *ShellInvocationRecord) error {
-	if len(rec.ExternalInvocationID) == 0 {
-		return fmt.Errorf("cannot store invocation '%s' without external id", rec.InvocationID)
-	}
-
-	marshaled, err := json.MarshalIndent(&rec, "", " ")
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(
-		path.Join(st.config.DirPath, fmt.Sprintf("%s.json", rec.ExternalInvocationID)),
-		marshaled,
-		os.ModePerm,
-	)
-}
-
-func (st *shellTracker) readInvocation(extId string) (*ShellInvocationRecord, error) {
-	if len(extId) == 0 {
-		return nil, fmt.Errorf("empty ext invocation id provided")
-	}
-
-	file, err := os.Open(path.Join(st.config.DirPath, fmt.Sprintf("%s.json", extId)))
-	if err != nil {
-		return nil, err
-	}
-
-	var rec ShellInvocationRecord
-	if err := json.NewDecoder(file).Decode(&rec); err != nil {
-		return nil, err
-	}
-
-	return &rec, nil
-}
-
-func (st *shellTracker) saveInvocation(_ context.Context, shellLine, invocationID string) (string, error) {
+func (st *shellTracker) saveInvocation(ctx context.Context, shellLine, invocationID string) (string, error) {
 	rec := ShellInvocationRecord{
 		InvocationID: invocationID,
 		ParentID:     os.Getppid(),
@@ -219,17 +187,17 @@ func (st *shellTracker) saveInvocation(_ context.Context, shellLine, invocationI
 		return "", err
 	}
 
-	if err := st.storeInvocation(&rec); err != nil {
+	if err := st.storage.Store(ctx, &rec); err != nil {
 		return "", err
 	}
 
 	return rec.ExternalInvocationID, nil
 }
 
-func (st *shellTracker) notifyInvocationFinished(_ context.Context, extInvocationId string) error {
+func (st *shellTracker) notifyInvocationFinished(ctx context.Context, extInvocationId string) error {
 	now := st.clock.NowUnix()
 
-	rec, err := st.readInvocation(extInvocationId)
+	rec, err := st.storage.Get(ctx, extInvocationId)
 	if err != nil {
 		return err
 	}
@@ -256,11 +224,10 @@ func (st *shellTracker) notifyInvocationFinished(_ context.Context, extInvocatio
 	}
 
 	if st.config.CleanupEnabled {
-		// TODO cleanup stored invocation
-		fmt.Printf("cleaning up notifications is not implemented yet, consider disabling the option and using temp fs :)\n")
+		err = st.storage.Erase(ctx, extInvocationId)
 	}
 
-	return nil
+	return err
 }
 
 func main() {
@@ -272,7 +239,11 @@ func main() {
 
 	// TODO read config from file
 	cfg := DefaultShellTrackerConfig()
-	shellTracker := NewShellTracker(&cfg, &defaultClock{}, uuidInvocationGen)
+
+	shellTracker, err := NewShellTracker(&cfg, &defaultClock{}, uuidInvocationGen)
+	if err != nil {
+		os.Exit(1) // TODO put all stuff inside the root command
+	}
 
 	ctx := context.Background() // TODO
 
@@ -298,17 +269,15 @@ func main() {
 	saveInvocationCommand.Flags().StringVar(&shellLine, "shell-line", "", "shell command line to put into the invocation")
 	saveInvocationCommand.Flags().StringVar(&shellInvocationId, "invocation-id", "", "externally defined invocation id (empty by default)")
 
-
 	var extInvocationId string
 	notifyCommand := cobra.Command{
-		Use: "notify",
+		Use:   "notify",
 		Short: "trigger notification for invocation that has finished executing",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return shellTracker.notifyInvocationFinished(ctx, extInvocationId)
 		},
 	}
 	notifyCommand.Flags().StringVar(&extInvocationId, "invocation-id", "", "shell command invocation id returned by save-invocation call")
-
 
 	root.AddCommand(&saveInvocationCommand)
 	root.AddCommand(&notifyCommand)
