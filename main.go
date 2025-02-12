@@ -37,9 +37,9 @@ func InvocationGenFromStringer[T fmt.Stringer](gen func() (T, error)) Invocation
 var uuidInvocationGen = InvocationGenFromStringer(uuid.NewUUID)
 
 type NotificationData struct {
-	Invocation *ShellInvocationRecord
+	Invocation   *ShellInvocationRecord
 	NowTimestamp int64
-	ExecTime int64
+	ExecTime     int64
 	// feel free to add more data that can be reused among notifiers
 }
 
@@ -93,7 +93,7 @@ func NewShellTracker(
 		storage:         storage,
 		clock:           clock,
 		invocationIDGen: invocationGen,
-		notifiers: map[NotificationType]notifier {
+		notifiers: map[NotificationType]notifier{
 			NotificationCLI: NewCliNotifier(os.Stdout),
 		},
 	}, nil
@@ -196,9 +196,9 @@ func (st *shellTracker) notifyInvocationFinished(ctx context.Context, extInvocat
 				continue
 			}
 			if err := notifier.Notify(ctx, &NotificationData{
-				Invocation: rec,
+				Invocation:   rec,
 				NowTimestamp: now,
-				ExecTime: execTime,
+				ExecTime:     execTime,
 			}); err != nil {
 				return err
 			}
@@ -212,13 +212,7 @@ func (st *shellTracker) notifyInvocationFinished(ctx context.Context, extInvocat
 	return err
 }
 
-func main() {
-
-	root := cobra.Command{
-		Use:   os.Args[0],
-		Short: "Shell invocation tracking and notifying utility",
-	}
-
+func initShellTracker(ctx context.Context) (*shellTracker, error) {
 	cfg, err := ReadFromDefaultLoc()
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -226,29 +220,31 @@ func main() {
 			cfg = DefaultShellTrackerConfig()
 			if err := SaveConfigToDefaultLoc(cfg); err != nil {
 				fmt.Printf("failed to save config: %v", err)
-				os.Exit(1) // TODO
+				return nil, err
 			}
 		} else {
 			fmt.Printf("failed to read config from default location, err: %v", err)
-			os.Exit(1) // TODO
+			return nil, err
 		}
 	}
 
 	shellTracker, err := NewShellTracker(cfg, &defaultClock{}, uuidInvocationGen)
 	if err != nil {
-		os.Exit(1) // TODO put all stuff inside the root command
+		return nil, err
 	}
-
-	ctx := context.Background() // TODO
 
 	if err := shellTracker.Start(ctx); err != nil {
-		os.Exit(1)
+		return nil, err
 	}
 
+	return shellTracker, nil
+}
+
+func buildStartInvocationCommand(ctx context.Context, shellTracker *shellTracker) *cobra.Command {
 	var (
 		shellLine, shellInvocationId string
 	)
-	saveInvocationCommand := cobra.Command{
+	saveInvocationCommand := &cobra.Command{
 		Use:   "save-invocation",
 		Short: "save invocation of the shell command into the storage and return the external id assigned to the execution",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -262,7 +258,10 @@ func main() {
 	}
 	saveInvocationCommand.Flags().StringVar(&shellLine, "shell-line", "", "shell command line to put into the invocation")
 	saveInvocationCommand.Flags().StringVar(&shellInvocationId, "invocation-id", "", "externally defined invocation id (empty by default)")
+	return saveInvocationCommand
+}
 
+func buildNotifyCommand(ctx context.Context, shellTracker *shellTracker) *cobra.Command {
 	var extInvocationId string
 	notifyCommand := cobra.Command{
 		Use:   "notify",
@@ -272,9 +271,27 @@ func main() {
 		},
 	}
 	notifyCommand.Flags().StringVar(&extInvocationId, "invocation-id", "", "shell command invocation id returned by save-invocation call")
+	return &notifyCommand
+}
 
-	root.AddCommand(&saveInvocationCommand)
-	root.AddCommand(&notifyCommand)
+func main() {
+	root := cobra.Command{
+		Use:   os.Args[0],
+		Short: "Shell invocation tracking and notifying utility",
+	}
+
+	ctx := context.Background()
+	shellTracker, err := initShellTracker(ctx)
+	if err != nil {
+		fmt.Printf("failed to initialize app: %v", err)
+		os.Exit(1)
+	}
+
+	saveInvocationCommand := buildStartInvocationCommand(ctx, shellTracker)
+	notifyCommand := buildNotifyCommand(ctx, shellTracker)
+
+	root.AddCommand(saveInvocationCommand)
+	root.AddCommand(notifyCommand)
 
 	if err := root.Execute(); err != nil {
 		os.Exit(1)
