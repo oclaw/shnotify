@@ -12,7 +12,7 @@ import (
 
 
 type telegramNotifier struct {
-	transport *telegram.Telegram
+	transport *telegram.Telegram // wrapper around telegram bot API that suits my needs
 }
 
 func NewTelegramNotifier(

@@ -19,10 +19,6 @@ type fsInvocationStorage struct {
 	dirPath string
 }
 
-func (st *shellTracker) Start(ctx context.Context) error {
-	return nil
-}
-
 func NewFsInvocationStorage(dirPath string) (InvocationStorage, error) {
 	storage := &fsInvocationStorage{
 		dirPath: dirPath,

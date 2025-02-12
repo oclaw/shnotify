@@ -17,7 +17,6 @@ type Registry struct {
 func NewRegistry() *Registry {
 	return &Registry{
 		notifiers: make(map[types.NotificationType]Notifier),
-
 	}
 }
 

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
 	"github.com/spf13/cobra"
 )
 
-// read config and init all needed objects
-func initShellTracker(ctx context.Context) (*shellTracker, error) {
+func initConfig() (*ShellTrackerConfig, error) {
 	cfg, err := ReadFromDefaultLoc()
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -25,28 +25,24 @@ func initShellTracker(ctx context.Context) (*shellTracker, error) {
 		}
 	}
 
-	shellTracker, err := NewShellTracker(cfg, &defaultClock{}, uuidInvocationGen)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := shellTracker.Start(ctx); err != nil {
-		return nil, err
-	}
-
-	return shellTracker, nil
+	return cfg, nil
 }
 
 // support for shell track start command
-func buildStartInvocationCommand(ctx context.Context, shellTracker *shellTracker) *cobra.Command {
+func buildStartInvocationCommand(ctx context.Context, cfg *ShellTrackerConfig) (*cobra.Command, error) {
 	var (
 		shellLine, shellInvocationId string
 	)
+
+	invokeStarter, err := NewInvocationStarter(cfg, &defaultClock{}, uuidInvocationGen)
+	if err != nil {
+		return nil, err
+	}
 	saveInvocationCommand := &cobra.Command{
 		Use:   "save-invocation",
 		Short: "save invocation of the shell command into the storage and return the external id assigned to the execution",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ret, err := shellTracker.saveInvocation(ctx, shellLine, shellInvocationId)
+			ret, err := invokeStarter.SaveInvocation(ctx, shellLine, shellInvocationId)
 			if err != nil {
 				return err
 			}
@@ -56,43 +52,71 @@ func buildStartInvocationCommand(ctx context.Context, shellTracker *shellTracker
 	}
 	saveInvocationCommand.Flags().StringVar(&shellLine, "shell-line", "", "shell command line to put into the invocation")
 	saveInvocationCommand.Flags().StringVar(&shellInvocationId, "invocation-id", "", "externally defined invocation id (empty by default)")
-	return saveInvocationCommand
+	return saveInvocationCommand, nil
 }
 
 // support for shell track end command
-func buildNotifyCommand(ctx context.Context, shellTracker *shellTracker) *cobra.Command {
+func buildNotifyCommand(ctx context.Context, cfg *ShellTrackerConfig) (*cobra.Command, error) {
 	var extInvocationId string
+
+	shellTracker, err := NewShellTracker(cfg, &defaultClock{})
+	if err != nil {
+		return nil, err
+	}
 	notifyCommand := cobra.Command{
 		Use:   "notify",
 		Short: "trigger notification for invocation that has finished executing",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return shellTracker.notifyInvocationFinished(ctx, extInvocationId)
+			return shellTracker.NotifyInvocationFinished(ctx, extInvocationId)
 		},
 	}
 	notifyCommand.Flags().StringVar(&extInvocationId, "invocation-id", "", "shell command invocation id returned by save-invocation call")
-	return &notifyCommand
+	return &notifyCommand, nil
 }
 
-func main() {
+func setupRootCommand(ctx context.Context, cfg *ShellTrackerConfig) (*cobra.Command, error) {
 	root := cobra.Command{
 		Use:   os.Args[0],
 		Short: "Shell invocation tracking and notifying utility",
 	}
 
-	ctx := context.Background()
-	shellTracker, err := initShellTracker(ctx)
+	saveInvocationCommand, err := buildStartInvocationCommand(ctx, cfg)
 	if err != nil {
-		fmt.Printf("failed to initialize app: %v", err)
-		os.Exit(1)
+		return nil, err
 	}
 
-	saveInvocationCommand := buildStartInvocationCommand(ctx, shellTracker)
-	notifyCommand := buildNotifyCommand(ctx, shellTracker)
+	notifyCommand, err := buildNotifyCommand(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
 
-	root.AddCommand(saveInvocationCommand)
-	root.AddCommand(notifyCommand)
+	root.AddCommand(
+		saveInvocationCommand,
+		notifyCommand,
+	)
+	return &root, nil
+}
 
-	if err := root.Execute(); err != nil {
+func run(ctx context.Context) error {
+	cfg, err := initConfig()
+	if err != nil {
+		return err
+	}
+	root, err := setupRootCommand(ctx, cfg)
+	if err != nil {
+		return err
+	}
+
+	return root.ExecuteContext(ctx)
+}
+
+
+
+func main() {
+	ctx := context.Background()
+
+	if err := run(ctx); err != nil {
+		fmt.Printf("failed to run shnotify: %v\n", err)
 		os.Exit(1)
 	}
 }

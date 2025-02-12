@@ -8,8 +8,8 @@ This utility implements two calls: register an invocation (save-invocation mode)
 Possible option of integration of shnotify into your zsh config is shown in zsrch-hook-example.txt file
 
 ### Nearest plans
- - [x] Support notifications with Telegram bot
- - [ ] Support proxy notifiers with system service and move them there
+ - [x] Support notifications with Telegram 
+ - [ ] Implement client-server mode (add shnotifyd service) and move command implementation there
  - [ ] Support Linux notifications with CGO libnotify
  - [ ] Support direct call to setup a hook on a single command execution
  - [x] Abstract notifiers
