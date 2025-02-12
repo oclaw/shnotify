@@ -9,16 +9,17 @@ Possible option of integration of shnotify into your zsh config is shown in zsrc
 
 ### Nearest plans
  - [x] Support notifications with Telegram 
- - [ ] Implement client-server mode (add shnotifyd service) and move command implementation there
- - [ ] Support Linux notifications with CGO libnotify
- - [ ] Support direct call to setup a hook on a single command execution
  - [x] Abstract notifiers
  - [x] Abstract storage
- - [ ] Support non-file storage for invocations (sqlite for example)
+ - [ ] Implement client-server mode (add shnotifyd service) and move command implementation there
+ - [ ] Support Linux notifications with CGO libnotify
  - [ ] Support allow lists and ban lists for the programs
+ - [ ] Support direct call to setup a hook on a single command execution (without setting up shell hook)
+ - [ ] Support non-file storage for invocations (sqlite for example)
  - [ ] Scan executing line for secrets and prevent them to be stored and included into the notification
+ - [ ] Implement autocleaner for storage
 
 ### Source packages
- - Linux OS push notifications (CGO required) - https://github.com/GNOME/libnotify
- - Shell parser - https://github.com/mvdan/sh
- - Notifiers - https://github.com/nikoksr/notify
+ - [ ] Linux OS push notifications (CGO required) - https://github.com/GNOME/libnotify
+ - [ ] Shell parser - https://github.com/mvdan/sh
+ - [x] Notifiers - https://github.com/nikoksr/notify
