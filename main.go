@@ -60,7 +60,7 @@ func buildStartInvocationCommand(ctx context.Context, cfg *ShellTrackerConfig) (
 
 // support for shell track end command
 func buildNotifyCommand(ctx context.Context, cfg *ShellTrackerConfig) (*cobra.Command, error) {
-	var extInvocationId string
+	var invocationID string
 
 	shellTracker, err := NewShellTracker(cfg, &defaultClock{})
 	if err != nil {
@@ -70,10 +70,10 @@ func buildNotifyCommand(ctx context.Context, cfg *ShellTrackerConfig) (*cobra.Co
 		Use:   "notify",
 		Short: "trigger notification for invocation that has finished executing",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return shellTracker.NotifyInvocationFinished(ctx, extInvocationId)
+			return shellTracker.Notify(ctx, types.InvocationID(invocationID))
 		},
 	}
-	notifyCommand.Flags().StringVar(&extInvocationId, "invocation-id", "", "shell command invocation id returned by save-invocation call")
+	notifyCommand.Flags().StringVar(&invocationID, "invocation-id", "", "shell command invocation id returned by save-invocation call")
 	return &notifyCommand, nil
 }
 

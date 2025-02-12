@@ -21,4 +21,4 @@ Possible option of integration of shnotify into your zsh config is shown in zsrc
 ### Source packages
  - Linux OS push notifications (CGO required) - https://github.com/GNOME/libnotify
  - Shell parser - https://github.com/mvdan/sh
- - Notifiers - ittps://github.com/nikoksr/notify
+ - Notifiers - https://github.com/nikoksr/notify

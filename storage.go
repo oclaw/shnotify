@@ -11,8 +11,8 @@ import (
 
 type InvocationStorage interface {
 	Store(ctx context.Context, rec *types.ShellInvocationRecord) error
-	Get(ctx context.Context, id string) (*types.ShellInvocationRecord, error)
-	Erase(ctx context.Context, id string) error
+	Get(ctx context.Context, id types.InvocationID) (*types.ShellInvocationRecord, error)
+	Erase(ctx context.Context, id types.InvocationID) error
 }
 
 type fsInvocationStorage struct {
@@ -51,12 +51,12 @@ func (st *fsInvocationStorage) Store(ctx context.Context, rec *types.ShellInvoca
 	return err
 }
 
-func (st *fsInvocationStorage) Get(ctx context.Context, extId string) (*types.ShellInvocationRecord, error) {
-	if len(extId) == 0 {
-		return nil, fmt.Errorf("empty ext invocation id provided")
+func (st *fsInvocationStorage) Get(ctx context.Context, id types.InvocationID) (*types.ShellInvocationRecord, error) {
+	if len(id) == 0 {
+		return nil, fmt.Errorf("empty invocation id provided")
 	}
 
-	file, err := os.Open(path.Join(st.dirPath, fmt.Sprintf("%s.json", extId)))
+	file, err := os.Open(path.Join(st.dirPath, fmt.Sprintf("%s.json", id)))
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (st *fsInvocationStorage) Get(ctx context.Context, extId string) (*types.Sh
 	return &rec, nil
 }
 
-func (st *fsInvocationStorage) Erase(ctx context.Context, id string) error {
+func (st *fsInvocationStorage) Erase(ctx context.Context, id types.InvocationID) error {
 	err := os.Remove(fmt.Sprintf("%s.json", id))
 	return Ignore(err, os.ErrNotExist)
 }

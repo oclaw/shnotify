@@ -18,12 +18,15 @@ func InvocationGenFromStringer[T fmt.Stringer](gen func() (T, error)) Invocation
 	}
 }
 
-
 type ShellInvocationRecord struct {
 	InvocationID InvocationID `json:"invocation_id"`
 	ParentID     int          `json:"ppid"`
 	ShellLine    string       `json:"cmd_text"`
 	Timestamp    int64        `json:"started_at"`
+}
+
+type NotificationResult struct {
+	Message string `json:"message,omitempty"`
 }
 
 type NotificationData struct {

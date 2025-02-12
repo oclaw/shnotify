@@ -62,10 +62,10 @@ func NewShellTracker(
 	}, nil
 }
 
-func (st *shellTracker) NotifyInvocationFinished(ctx context.Context, extInvocationId string) error {
+func (st *shellTracker) Notify(ctx context.Context, invocationID types.InvocationID) error {
 	now := st.clock.NowUnix()
 
-	rec, err := st.storage.Get(ctx, extInvocationId)
+	rec, err := st.storage.Get(ctx, invocationID)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (st *shellTracker) NotifyInvocationFinished(ctx context.Context, extInvocat
 	}
 
 	if st.config.CleanupEnabled {
-		err = st.storage.Erase(ctx, extInvocationId)
+		err = st.storage.Erase(ctx, invocationID)
 	}
 
 	return err
