@@ -31,8 +31,8 @@ func NewFsInvocationStorage(dirPath string) (InvocationStorage, error) {
 }
 
 func (st *fsInvocationStorage) Store(ctx context.Context, rec *types.ShellInvocationRecord) error {
-	if len(rec.ExternalInvocationID) == 0 {
-		return fmt.Errorf("cannot store invocation '%s' without external id", rec.InvocationID)
+	if len(rec.InvocationID) == 0 {
+		return fmt.Errorf("cannot store invocation without id")
 	}
 
 	marshaled, err := json.MarshalIndent(&rec, "", " ")
@@ -40,11 +40,15 @@ func (st *fsInvocationStorage) Store(ctx context.Context, rec *types.ShellInvoca
 		return err
 	}
 
-	return os.WriteFile(
-		path.Join(st.dirPath, fmt.Sprintf("%s.json", rec.ExternalInvocationID)),
-		marshaled,
-		os.ModePerm,
-	)
+	filename := fmt.Sprintf("%s.json", rec.InvocationID)
+	file, err := os.OpenFile(path.Join(st.dirPath, filename), os.O_WRONLY | os.O_CREATE, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(marshaled)
+	return err
 }
 
 func (st *fsInvocationStorage) Get(ctx context.Context, extId string) (*types.ShellInvocationRecord, error) {

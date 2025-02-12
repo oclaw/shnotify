@@ -1,11 +1,29 @@
 package types
 
+import (
+	"fmt"
+)
+
+type InvocationID string
+
+type InvocationIDGen func() (InvocationID, error)
+
+func InvocationGenFromStringer[T fmt.Stringer](gen func() (T, error)) InvocationIDGen {
+	return func() (InvocationID, error) {
+		val, err := gen()
+		if err != nil {
+			return "", err
+		}
+		return InvocationID(val.String()), nil
+	}
+}
+
+
 type ShellInvocationRecord struct {
-	InvocationID         string `json:"invocation_id"`
-	ParentID             int    `json:"ppid"`
-	ShellLine            string `json:"cmd_text"`
-	Timestamp            int64  `json:"started_at"`
-	ExternalInvocationID string `json:"ext_invocation_id"`
+	InvocationID InvocationID `json:"invocation_id"`
+	ParentID     int          `json:"ppid"`
+	ShellLine    string       `json:"cmd_text"`
+	Timestamp    int64        `json:"started_at"`
 }
 
 type NotificationData struct {

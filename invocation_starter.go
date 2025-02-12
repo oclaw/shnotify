@@ -2,42 +2,25 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
-	"os"
-	"strconv"
-
 	"github.com/google/uuid"
 	"github.com/oclaw/shnotify/types"
+	"os"
+	"strings"
 )
 
-type InvocationIDGen func() (string, error)
-
-func InvocationGenFromStringer[T fmt.Stringer](gen func() (T, error)) InvocationIDGen {
-	return func() (string, error) {
-		val, err := gen()
-		if err != nil {
-			return "", err
-		}
-		return val.String(), nil
-	}
-}
-
-var uuidInvocationGen = InvocationGenFromStringer(uuid.NewUUID)
-
+var uuidInvocationGen = types.InvocationGenFromStringer(uuid.NewUUID)
 
 type invocationStarter struct {
 	config          *ShellTrackerConfig
 	clock           Clock
 	storage         InvocationStorage
-	invocationIDGen InvocationIDGen
+	invocationIDGen types.InvocationIDGen
 }
 
 func NewInvocationStarter(
 	cfg *ShellTrackerConfig,
 	clock Clock,
-	invocationGen InvocationIDGen,
+	invocationGen types.InvocationIDGen,
 ) (*invocationStarter, error) {
 	storage, err := NewFsInvocationStorage(cfg.DirPath)
 	if err != nil {
@@ -59,24 +42,17 @@ type preprocessedCommand struct {
 
 func (st *invocationStarter) preprocessCommand(line string) (preprocessedCommand, error) {
 	return preprocessedCommand{
-		ShellLine: line, // TODO add command cleanup
-		Binary:    "",   // TODO add extracting of the binary
+		ShellLine: strings.TrimSpace(line), // TODO add command cleanup
+		Binary:    "",                      // TODO add extracting of the binary
 	}, nil
 }
 
-func (st *invocationStarter) getExtInvocationID(rec *types.ShellInvocationRecord) (string, error) {
-	if len(rec.ShellLine) == 0 {
-		return "", fmt.Errorf("Empty shell line input for invocation '%s'", rec.InvocationID)
-	}
-	hash := sha256.New()
-	hash.Write([]byte(rec.InvocationID))
-	hash.Write([]byte(strconv.Itoa(rec.ParentID)))
-	hash.Write([]byte(rec.ShellLine))
-	ret := hash.Sum(nil)
-	return hex.EncodeToString(ret), nil
-}
+func (st *invocationStarter) SaveInvocation(
+	ctx context.Context,
+	shellLine string,
+	invocationID types.InvocationID,
+) (types.InvocationID, error) {
 
-func (st *invocationStarter) SaveInvocation(ctx context.Context, shellLine, invocationID string) (string, error) {
 	rec := types.ShellInvocationRecord{
 		InvocationID: invocationID,
 		ParentID:     os.Getppid(),
@@ -100,14 +76,9 @@ func (st *invocationStarter) SaveInvocation(ctx context.Context, shellLine, invo
 
 	rec.ShellLine = command.ShellLine
 
-	rec.ExternalInvocationID, err = st.getExtInvocationID(&rec)
-	if err != nil {
-		return "", err
-	}
-
 	if err := st.storage.Store(ctx, &rec); err != nil {
 		return "", err
 	}
 
-	return rec.ExternalInvocationID, nil
+	return rec.InvocationID, nil
 }

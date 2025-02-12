@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/oclaw/shnotify/types"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +32,8 @@ func initConfig() (*ShellTrackerConfig, error) {
 // support for shell track start command
 func buildStartInvocationCommand(ctx context.Context, cfg *ShellTrackerConfig) (*cobra.Command, error) {
 	var (
-		shellLine, shellInvocationId string
+		shellLine string
+		shellInvocationId string
 	)
 
 	invokeStarter, err := NewInvocationStarter(cfg, &defaultClock{}, uuidInvocationGen)
@@ -42,7 +44,7 @@ func buildStartInvocationCommand(ctx context.Context, cfg *ShellTrackerConfig) (
 		Use:   "save-invocation",
 		Short: "save invocation of the shell command into the storage and return the external id assigned to the execution",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ret, err := invokeStarter.SaveInvocation(ctx, shellLine, shellInvocationId)
+			ret, err := invokeStarter.SaveInvocation(ctx, shellLine, types.InvocationID(shellInvocationId))
 			if err != nil {
 				return err
 			}
