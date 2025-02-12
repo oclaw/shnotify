@@ -11,7 +11,7 @@ Possible option of integration of shnotify into your zsh config is shown in zsrc
  - [ ] Support notifications with Telegram bot
  - [ ] Support Linux notifications with CGO libnotify
  - [ ] Support direct call to setup a hook on a single command execution
- - [ ] Abstract notifiers
+ - [x] Abstract notifiers
  - [x] Abstract storage
  - [ ] Support non-file storage for invocations (sqlite for example)
  - [ ] Support allow lists and ban lists for the programs

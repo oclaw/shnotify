@@ -35,13 +35,13 @@ type ShellTrackerConfig struct {
 	// TODO garbage collection settings
 }
 
-func DefaultShellTrackerConfig() ShellTrackerConfig {
+func DefaultShellTrackerConfig() *ShellTrackerConfig {
 
 	const dirPath = "shnotify"
 
 	var timeout int64 = 30 // seconds
 
-	return ShellTrackerConfig{
+	return &ShellTrackerConfig{
 		DirPath:        path.Join(os.TempDir(), dirPath),
 		CleanupEnabled: true,
 		Notifications: []Notification{
@@ -81,4 +81,25 @@ func SaveConfigToDefaultLoc(cfg *ShellTrackerConfig) error {
 	}
 
 	return cfg.Save(path.Join(dir, "shnotify", "config.yaml"))
+}
+
+func ReadFromDefaultLoc() (*ShellTrackerConfig, error) {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+
+	reader, err := os.Open(path.Join(dir, "shnotify", "config.yaml"))
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+
+	var ret ShellTrackerConfig
+	decoder := yaml.NewDecoder(reader)
+	if err := decoder.Decode(&ret); err != nil {
+		return nil, err
+	}
+
+	return &ret, nil
 }

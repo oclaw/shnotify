@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 
@@ -35,11 +36,45 @@ func InvocationGenFromStringer[T fmt.Stringer](gen func() (T, error)) Invocation
 
 var uuidInvocationGen = InvocationGenFromStringer(uuid.NewUUID)
 
+type NotificationData struct {
+	Invocation *ShellInvocationRecord
+	NowTimestamp int64
+	ExecTime int64
+	// feel free to add more data that can be reused among notifiers
+}
+
+type notifier interface {
+	Notify(context.Context, *NotificationData) error
+}
+
+type cliNotifier struct {
+	out io.Writer
+}
+
+var _ notifier = (*cliNotifier)(nil)
+
+func NewCliNotifier(stdout io.Writer) *cliNotifier {
+	return &cliNotifier{
+		out: stdout,
+	}
+}
+
+func (cn *cliNotifier) Notify(_ context.Context, data *NotificationData) error {
+	fmt.Fprintf(cn.out, "Command %s '%s' was executing for a really long time (%d sec)\n",
+		data.Invocation.InvocationID,
+		data.Invocation.ShellLine,
+		data.ExecTime,
+	)
+	return nil
+}
+
 type shellTracker struct {
 	config          *ShellTrackerConfig
 	clock           Clock
 	storage         InvocationStorage
 	invocationIDGen InvocationIDGen
+
+	notifiers map[NotificationType]notifier
 }
 
 func NewShellTracker(
@@ -58,6 +93,9 @@ func NewShellTracker(
 		storage:         storage,
 		clock:           clock,
 		invocationIDGen: invocationGen,
+		notifiers: map[NotificationType]notifier {
+			NotificationCLI: NewCliNotifier(os.Stdout),
+		},
 	}, nil
 }
 
@@ -152,12 +190,17 @@ func (st *shellTracker) notifyInvocationFinished(ctx context.Context, extInvocat
 		}
 
 		if notificationNeeded {
-			switch notifConfig.Type {
-			case NotificationCLI:
-				fmt.Printf("Command %s '%s' was executing for a really long time (%d sec vs %d limit)\n",
-					rec.InvocationID, rec.ShellLine, execTime, *longerThan)
-			default:
+			notifier, ok := st.notifiers[notifConfig.Type]
+			if !ok {
 				fmt.Printf("notification type '%s' is not suppported yet\n", notifConfig.Type)
+				continue
+			}
+			if err := notifier.Notify(ctx, &NotificationData{
+				Invocation: rec,
+				NowTimestamp: now,
+				ExecTime: execTime,
+			}); err != nil {
+				return err
 			}
 		}
 	}
@@ -176,10 +219,22 @@ func main() {
 		Short: "Shell invocation tracking and notifying utility",
 	}
 
-	// TODO read config from file
-	cfg := DefaultShellTrackerConfig()
+	cfg, err := ReadFromDefaultLoc()
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			fmt.Printf("config does not exist, will create default one")
+			cfg = DefaultShellTrackerConfig()
+			if err := SaveConfigToDefaultLoc(cfg); err != nil {
+				fmt.Printf("failed to save config: %v", err)
+				os.Exit(1) // TODO
+			}
+		} else {
+			fmt.Printf("failed to read config from default location, err: %v", err)
+			os.Exit(1) // TODO
+		}
+	}
 
-	shellTracker, err := NewShellTracker(&cfg, &defaultClock{}, uuidInvocationGen)
+	shellTracker, err := NewShellTracker(cfg, &defaultClock{}, uuidInvocationGen)
 	if err != nil {
 		os.Exit(1) // TODO put all stuff inside the root command
 	}
