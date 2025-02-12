@@ -22,6 +22,7 @@ type ShellTrackerConfig struct {
 	CleanupEnabled      bool             `yaml:"cleanup_enabled"`        // if enabled service will manually delete the invocations
 	TrackProcsBanList   []string         `yaml:"track_procs_ban_list"`   // do not track the binaries from the list
 	TrackProcsAllowList []string         `yaml:"track_procs_allow_list"` // track only the binaries from the list
+	DeadlineSec         int64            `yaml:"deadline_sec"`
 	Notifications       []Notification   `yaml:"notifications"`
 	NotifierSettings    NotifierSettings `yaml:"notifier_settings,omitempty"`
 
@@ -40,6 +41,7 @@ func DefaultShellTrackerConfig() *ShellTrackerConfig {
 
 	return &ShellTrackerConfig{
 		DirPath:        path.Join(os.TempDir(), dirPath),
+		DeadlineSec:    3,
 		CleanupEnabled: true,
 		Notifications: []Notification{
 			{

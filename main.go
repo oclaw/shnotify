@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/oclaw/shnotify/types"
 	"github.com/spf13/cobra"
@@ -104,6 +105,10 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(cfg.DeadlineSec))
+	defer cancel()
+
 	root, err := setupRootCommand(ctx, cfg)
 	if err != nil {
 		return err
@@ -111,8 +116,6 @@ func run(ctx context.Context) error {
 
 	return root.ExecuteContext(ctx)
 }
-
-
 
 func main() {
 	ctx := context.Background()
