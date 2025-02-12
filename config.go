@@ -4,16 +4,8 @@ import (
 	"os"
 	"path"
 
+	"github.com/oclaw/shnotify/types"
 	"gopkg.in/yaml.v3"
-)
-
-type NotificationType string
-
-const (
-	NotificationCLI      NotificationType = "cli"      // trivial notification putting the text into the command line
-	NotificatonOSPush                     = "os-push"  // GUI OS notification (libnotify for linux)
-	NotificationTelegram                  = "telegram" // Notification published into the telegram bot
-	// feel free to put here any type of supported (or proxied) notification
 )
 
 type NotificationConditions struct {
@@ -21,7 +13,7 @@ type NotificationConditions struct {
 }
 
 type Notification struct {
-	Type       NotificationType       `yaml:"type"`
+	Type       types.NotificationType       `yaml:"type"`
 	Conditions NotificationConditions `yaml:"conditions"`
 }
 
@@ -46,7 +38,7 @@ func DefaultShellTrackerConfig() *ShellTrackerConfig {
 		CleanupEnabled: true,
 		Notifications: []Notification{
 			{
-				Type: NotificationCLI,
+				Type: types.NotificationCLI,
 				Conditions: NotificationConditions{
 					RunLongerThanSec: &timeout,
 				},

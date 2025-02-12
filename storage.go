@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/oclaw/shnotify/types"
 	"os"
 	"path"
 )
 
 type InvocationStorage interface {
-	Store(ctx context.Context, rec *ShellInvocationRecord) error
-	Get(ctx context.Context, id string) (*ShellInvocationRecord, error)
+	Store(ctx context.Context, rec *types.ShellInvocationRecord) error
+	Get(ctx context.Context, id string) (*types.ShellInvocationRecord, error)
 	Erase(ctx context.Context, id string) error
 }
 
@@ -33,7 +34,7 @@ func NewFsInvocationStorage(dirPath string) (InvocationStorage, error) {
 	return storage, nil
 }
 
-func (st *fsInvocationStorage) Store(ctx context.Context, rec *ShellInvocationRecord) error {
+func (st *fsInvocationStorage) Store(ctx context.Context, rec *types.ShellInvocationRecord) error {
 	if len(rec.ExternalInvocationID) == 0 {
 		return fmt.Errorf("cannot store invocation '%s' without external id", rec.InvocationID)
 	}
@@ -50,7 +51,7 @@ func (st *fsInvocationStorage) Store(ctx context.Context, rec *ShellInvocationRe
 	)
 }
 
-func (st *fsInvocationStorage) Get(ctx context.Context, extId string) (*ShellInvocationRecord, error) {
+func (st *fsInvocationStorage) Get(ctx context.Context, extId string) (*types.ShellInvocationRecord, error) {
 	if len(extId) == 0 {
 		return nil, fmt.Errorf("empty ext invocation id provided")
 	}
@@ -61,7 +62,7 @@ func (st *fsInvocationStorage) Get(ctx context.Context, extId string) (*ShellInv
 	}
 	defer file.Close()
 
-	var rec ShellInvocationRecord
+	var rec types.ShellInvocationRecord
 	if err := json.NewDecoder(file).Decode(&rec); err != nil {
 		return nil, err
 	}

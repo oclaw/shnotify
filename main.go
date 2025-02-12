@@ -6,21 +6,15 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 
 	"github.com/google/uuid"
+	"github.com/oclaw/shnotify/notify"
+	"github.com/oclaw/shnotify/notify/cli"
+	"github.com/oclaw/shnotify/types"
 	"github.com/spf13/cobra"
 )
-
-type ShellInvocationRecord struct {
-	InvocationID         string `json:"invocation_id"`
-	ParentID             int    `json:"ppid"`
-	ShellLine            string `json:"cmd_text"`
-	Timestamp            int64  `json:"started_at"`
-	ExternalInvocationID string `json:"ext_invocation_id"`
-}
 
 type InvocationIDGen func() (string, error)
 
@@ -36,45 +30,12 @@ func InvocationGenFromStringer[T fmt.Stringer](gen func() (T, error)) Invocation
 
 var uuidInvocationGen = InvocationGenFromStringer(uuid.NewUUID)
 
-type NotificationData struct {
-	Invocation   *ShellInvocationRecord
-	NowTimestamp int64
-	ExecTime     int64
-	// feel free to add more data that can be reused among notifiers
-}
-
-type notifier interface {
-	Notify(context.Context, *NotificationData) error
-}
-
-type cliNotifier struct {
-	out io.Writer
-}
-
-var _ notifier = (*cliNotifier)(nil)
-
-func NewCliNotifier(stdout io.Writer) *cliNotifier {
-	return &cliNotifier{
-		out: stdout,
-	}
-}
-
-func (cn *cliNotifier) Notify(_ context.Context, data *NotificationData) error {
-	fmt.Fprintf(cn.out, "Command %s '%s' was executing for a really long time (%d sec)\n",
-		data.Invocation.InvocationID,
-		data.Invocation.ShellLine,
-		data.ExecTime,
-	)
-	return nil
-}
-
 type shellTracker struct {
 	config          *ShellTrackerConfig
 	clock           Clock
 	storage         InvocationStorage
 	invocationIDGen InvocationIDGen
-
-	notifiers map[NotificationType]notifier
+	registry        *notify.Registry
 }
 
 func NewShellTracker(
@@ -88,14 +49,15 @@ func NewShellTracker(
 		return nil, err
 	}
 
+	reg := notify.NewRegistry()
+	reg.RegisterNotifier(types.NotificationCLI, cli.NewCliNotifier(os.Stdout))
+
 	return &shellTracker{
 		config:          cfg,
 		storage:         storage,
 		clock:           clock,
 		invocationIDGen: invocationGen,
-		notifiers: map[NotificationType]notifier{
-			NotificationCLI: NewCliNotifier(os.Stdout),
-		},
+		registry:        reg,
 	}, nil
 }
 
@@ -123,7 +85,7 @@ func (st *shellTracker) preprocessCommand(line string) (preprocessedCommand, err
 	}, nil
 }
 
-func (st *shellTracker) getExtInvocationID(rec *ShellInvocationRecord) (string, error) {
+func (st *shellTracker) getExtInvocationID(rec *types.ShellInvocationRecord) (string, error) {
 	if len(rec.ShellLine) == 0 {
 		return "", fmt.Errorf("Empty shell line input for invocation '%s'", rec.InvocationID)
 	}
@@ -136,7 +98,7 @@ func (st *shellTracker) getExtInvocationID(rec *ShellInvocationRecord) (string, 
 }
 
 func (st *shellTracker) saveInvocation(ctx context.Context, shellLine, invocationID string) (string, error) {
-	rec := ShellInvocationRecord{
+	rec := types.ShellInvocationRecord{
 		InvocationID: invocationID,
 		ParentID:     os.Getppid(),
 		Timestamp:    st.clock.NowUnix(),
@@ -190,12 +152,12 @@ func (st *shellTracker) notifyInvocationFinished(ctx context.Context, extInvocat
 		}
 
 		if notificationNeeded {
-			notifier, ok := st.notifiers[notifConfig.Type]
-			if !ok {
-				fmt.Printf("notification type '%s' is not suppported yet\n", notifConfig.Type)
+			notifier, err := st.registry.GetNotifier(ctx, notifConfig.Type)
+			if err != nil {
+				fmt.Printf("notification type '%s' failed: %v\n", notifConfig.Type, err)
 				continue
 			}
-			if err := notifier.Notify(ctx, &NotificationData{
+			if err := notifier.Notify(ctx, &types.NotificationData{
 				Invocation:   rec,
 				NowTimestamp: now,
 				ExecTime:     execTime,
