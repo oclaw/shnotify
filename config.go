@@ -13,18 +13,23 @@ type NotificationConditions struct {
 }
 
 type Notification struct {
-	Type       types.NotificationType       `yaml:"type"`
+	Type       types.NotificationType `yaml:"type"`
 	Conditions NotificationConditions `yaml:"conditions"`
 }
 
 type ShellTrackerConfig struct {
-	DirPath             string         `yaml:"dir_path"`               // directory to store shell invocations
-	CleanupEnabled      bool           `yaml:"cleanup_enabled"`        // if enabled service will manually delete the invocations
-	TrackProcsBanList   []string       `yaml:"track_procs_ban_list"`   // do not track the binaries from the list
-	TrackProcsAllowList []string       `yaml:"track_procs_allow_list"` // track only the binaries from the list
-	Notifications       []Notification `yaml:"notifications"`
-	// TODO notification configs
+	DirPath             string           `yaml:"dir_path"`               // directory to store shell invocations
+	CleanupEnabled      bool             `yaml:"cleanup_enabled"`        // if enabled service will manually delete the invocations
+	TrackProcsBanList   []string         `yaml:"track_procs_ban_list"`   // do not track the binaries from the list
+	TrackProcsAllowList []string         `yaml:"track_procs_allow_list"` // track only the binaries from the list
+	Notifications       []Notification   `yaml:"notifications"`
+	NotifierSettings    NotifierSettings `yaml:"notifier_settings,omitempty"`
+
 	// TODO garbage collection settings
+}
+
+type NotifierSettings struct {
+	TelegramChatID int64 `yaml:"telegram_chat_id,omitempty"`
 }
 
 func DefaultShellTrackerConfig() *ShellTrackerConfig {
@@ -53,12 +58,11 @@ func (cfg *ShellTrackerConfig) Save(filePath string) error {
 		return err
 	}
 
-	file, err := os.OpenFile(filePath, os.O_CREATE | os.O_WRONLY, os.ModePerm)
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-
 
 	encoder := yaml.NewEncoder(file)
 	defer encoder.Close()

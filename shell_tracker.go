@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"path"
 
 	"github.com/google/uuid"
 	"github.com/oclaw/shnotify/notify"
 	"github.com/oclaw/shnotify/notify/cli"
+	"github.com/oclaw/shnotify/notify/telegram"
 	"github.com/oclaw/shnotify/types"
 )
 
@@ -36,6 +38,7 @@ type shellTracker struct {
 	registry        *notify.Registry
 }
 
+// TODO separate notification writer and reader to avoid initialization of heavy connections on each invocation
 func NewShellTracker(
 	cfg *ShellTrackerConfig,
 	clock Clock,
@@ -48,7 +51,29 @@ func NewShellTracker(
 	}
 
 	reg := notify.NewRegistry()
-	reg.RegisterNotifier(types.NotificationCLI, cli.NewCliNotifier(os.Stdout))
+
+	for _, notif := range cfg.Notifications {
+
+		// TODO abstract to initializer map
+		switch notif.Type {
+		case types.NotificationCLI:
+			reg.RegisterNotifier(types.NotificationCLI, cli.NewCliNotifier(os.Stdout))
+		case types.NotificationTelegram:
+			dir, err := os.UserConfigDir()
+			if err != nil {
+				return nil, err
+			}
+			token, err := os.ReadFile(path.Join(dir, "shnotify", ".tg.token"))
+			if err != nil {
+				return nil, err
+			}
+			notifier, err := telegram.NewTelegramNotifier(string(token), cfg.NotifierSettings.TelegramChatID) // TODO validate presence of chat id
+			if err != nil {
+				return nil, err
+			}
+			reg.RegisterNotifier(types.NotificationTelegram, notifier)
+		}
+	}
 
 	return &shellTracker{
 		config:          cfg,
@@ -136,6 +161,8 @@ func (st *shellTracker) notifyInvocationFinished(ctx context.Context, extInvocat
 		if longerThan != nil && *longerThan <= execTime {
 			notificationNeeded = true
 		}
+
+		// fmt.Printf("invoking '%s' notification needed: %v\n", notifConfig.Type, notificationNeeded)
 
 		if notificationNeeded {
 			notifier, err := st.registry.GetNotifier(ctx, notifConfig.Type)

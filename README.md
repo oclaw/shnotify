@@ -8,7 +8,8 @@ This utility implements two calls: register an invocation (save-invocation mode)
 Possible option of integration of shnotify into your zsh config is shown in zsrch-hook-example.txt file
 
 ### Nearest plans
- - [ ] Support notifications with Telegram bot
+ - [x] Support notifications with Telegram bot
+ - [ ] Support proxy notifiers with system service and move them there
  - [ ] Support Linux notifications with CGO libnotify
  - [ ] Support direct call to setup a hook on a single command execution
  - [x] Abstract notifiers
@@ -20,4 +21,4 @@ Possible option of integration of shnotify into your zsh config is shown in zsrc
 ### Source packages
  - Linux OS push notifications (CGO required) - https://github.com/GNOME/libnotify
  - Shell parser - https://github.com/mvdan/sh
- - Notifiers - https://github.com/nikoksr/notify
+ - Notifiers - ittps://github.com/nikoksr/notify
