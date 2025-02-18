@@ -180,7 +180,7 @@ func (it *invocationTrackerImpl) Notify(ctx context.Context, invocationID types.
 				fmt.Printf("notification type '%s' failed: %v\n", notifConfig.Type, err)
 				continue
 			}
-			if it.notify(
+			if err := it.notify(
 				ctx,
 				notifier,
 				&types.NotificationData{
@@ -206,15 +206,16 @@ func (it *invocationTrackerImpl) notify(
 	data *types.NotificationData,
 ) error {
 
-	call := func() error {
+	call := func(ctx context.Context) error {
 		return notifier.Notify(ctx, data)
 	}
 	if !it.config.AsyncNotifications {
-		return call()
+		return call(ctx)
 	}
 
 	go func() {
-		if err := call(); err != nil {
+		ctx := context.WithoutCancel(ctx)
+		if err := call(ctx); err != nil {
 			fmt.Printf("Notification for invocation %s failed: %v", data.Invocation.InvocationID, err)
 		}
 	}()

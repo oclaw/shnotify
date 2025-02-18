@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -87,7 +88,23 @@ func (s *Server) Serve(ctx context.Context) error {
 		},
 	)
 
-	return http.Serve(listener, nil)
+	done := make(chan error)
+	go func() {
+		err = http.Serve(listener, nil)
+		done <- err
+	}()
+
+	select {
+	case err, ok := <-done:
+		if ok && err != nil {
+			fmt.Printf("server finalized with error %v", err)
+			return err
+		}
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
+	panic("unreachable")
 }
 
 func writeOK[Response any](rw http.ResponseWriter, appRes Response) error {
