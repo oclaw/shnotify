@@ -63,7 +63,7 @@ func main() {
 
 	root := cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return run(cmd.Context())
+			return common.IgnoreErr(run(cmd.Context()), context.Canceled)
 		},
 	}
 

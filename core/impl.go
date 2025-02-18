@@ -94,7 +94,7 @@ func (it *invocationTrackerImpl) initNotifiers() error {
 	var err error
 	it.regInitOnce.Do(func() {
 		it.registry, err = doInitNotifiers()
-	}
+	})
 	return err
 }
 
