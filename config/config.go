@@ -59,14 +59,14 @@ const (
 )
 
 type ShellTrackerConfig struct {
-	DirPath             string           `yaml:"dir_path"`               // directory to store shell invocations
-	CleanupEnabled      bool             `yaml:"cleanup_enabled"`        // if enabled service will manually delete the invocations
-	TrackProcsBanList   []string         `yaml:"track_procs_ban_list"`   // do not track the binaries from the list
-	TrackProcsAllowList []string         `yaml:"track_procs_allow_list"` // track only the binaries from the list
-	RPCSocketName       string           `yaml:"rpc_socket_name"`
-	DeadlineSec         int64            `yaml:"deadline_sec"`
-	Notifications       []Notification   `yaml:"notifications"`
-	NotifierSettings    NotifierSettings `yaml:"notifier_settings,omitempty"`
+	DirPath             string           `yaml:"dir_path"`                    // directory to store shell invocations
+	CleanupEnabled      bool             `yaml:"cleanup_enabled"`             // if enabled service will manually delete the invocations
+	TrackProcsBanList   []string         `yaml:"track_procs_ban_list"`        // do not track the binaries from the list
+	TrackProcsAllowList []string         `yaml:"track_procs_allow_list"`      // track only the binaries from the list
+	RPCSocketName       string           `yaml:"rpc_socket_name"`             // unix socket to use while running in client-server mode
+	DeadlineSec         int64            `yaml:"deadline_sec"`                // max time to await for notifier to finish its execution
+	Notifications       []Notification   `yaml:"notifications"`               // list of notifications and conditions for them
+	NotifierSettings    NotifierSettings `yaml:"notifier_settings,omitempty"` // notifier-specific params (non confidential)
 
 	InitMode           NotifierInitMode `yaml:"-"` // create all notifiers at the startup of the application or at the firt invocation of the notifier
 	AsyncNotifications bool             `yaml:"-"` // publish notification in a sync or async way
