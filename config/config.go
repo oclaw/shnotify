@@ -3,13 +3,47 @@ package config
 import (
 	"os"
 	"path"
+	"time"
 
+	"github.com/oclaw/shnotify/common"
 	"github.com/oclaw/shnotify/types"
 	"gopkg.in/yaml.v3"
 )
 
+type Duration time.Duration
+
+var (
+	_ yaml.Marshaler   = common.DefaultVal[Duration]()
+	_ yaml.Unmarshaler = (*Duration)(nil)
+)
+
+func (d Duration) MarshalYAML() (any, error) {
+	return time.Duration(d).String(), nil
+}
+
+func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
+	var raw string
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+	dd, err := time.ParseDuration(raw)
+	if err != nil {
+		return err
+	}
+	*d = Duration(dd)
+	return nil
+}
+
+func (d *Duration) LessThan(sec int64) bool {
+	if d == nil {
+		return false
+	}
+	dd := time.Duration(*d)
+	return sec > int64(dd.Seconds())
+}
+
 type NotificationConditions struct {
-	RunLongerThanSec *int64 `yaml:"run_longer_than_sec"` // TODO use time.ParseDuration() for unmarshalling from yaml
+	RunLongerThan *Duration `yaml:"run_longer_than"` // 30s, 1m, 1h
 }
 
 type Notification struct {
@@ -34,7 +68,8 @@ type ShellTrackerConfig struct {
 	Notifications       []Notification   `yaml:"notifications"`
 	NotifierSettings    NotifierSettings `yaml:"notifier_settings,omitempty"`
 
-	InitMode NotifierInitMode `yaml:"-"`
+	InitMode           NotifierInitMode `yaml:"-"` // create all notifiers at the startup of the application or at the firt invocation of the notifier
+	AsyncNotifications bool             `yaml:"-"` // publish notification in a sync or async way
 
 	// TODO garbage collection settings
 }
@@ -47,18 +82,18 @@ func DefaultShellTrackerConfig() *ShellTrackerConfig {
 
 	const dirPath = "shnotify"
 
-	var timeout int64 = 30 // seconds
+	timeout := Duration(time.Second * 30)
 
 	return &ShellTrackerConfig{
 		DirPath:        path.Join(os.TempDir(), dirPath),
 		DeadlineSec:    3,
 		CleanupEnabled: true,
-		RPCSocketName: path.Join(os.TempDir(), "shnotify-rpc.sock"),
+		RPCSocketName:  "/tmp/shnotify-rpc.sock",
 		Notifications: []Notification{
 			{
 				Type: types.NotificationCLI,
 				Conditions: NotificationConditions{
-					RunLongerThanSec: &timeout,
+					RunLongerThan: &timeout,
 				},
 			},
 		},

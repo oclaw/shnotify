@@ -2,13 +2,12 @@ package cli
 
 import (
 	"context"
-	"io"
 	"fmt"
+	"io"
 
 	"github.com/oclaw/shnotify/notify"
 	"github.com/oclaw/shnotify/types"
 )
-
 
 type cliNotifier struct {
 	out io.Writer

@@ -1,8 +1,8 @@
 package notify
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"github.com/oclaw/shnotify/types"
 )
 

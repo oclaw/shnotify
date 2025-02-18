@@ -169,8 +169,8 @@ func (it *invocationTrackerImpl) Notify(ctx context.Context, invocationID types.
 	// TODO abstract config condition matchers
 	for _, notifConfig := range it.config.Notifications {
 		var notificationNeeded bool
-		longerThan := notifConfig.Conditions.RunLongerThanSec
-		if longerThan != nil && *longerThan <= execTime {
+		threshold := notifConfig.Conditions.RunLongerThan
+		if threshold.LessThan(execTime) {
 			notificationNeeded = true
 		}
 
@@ -180,11 +180,14 @@ func (it *invocationTrackerImpl) Notify(ctx context.Context, invocationID types.
 				fmt.Printf("notification type '%s' failed: %v\n", notifConfig.Type, err)
 				continue
 			}
-			if err := notifier.Notify(ctx, &types.NotificationData{
-				Invocation:   rec,
-				NowTimestamp: now,
-				ExecTime:     execTime,
-			}); err != nil {
+			if it.notify(
+				ctx,
+				notifier,
+				&types.NotificationData{
+					Invocation:   rec,
+					NowTimestamp: now,
+					ExecTime:     execTime,
+				}); err != nil {
 				return err
 			}
 		}
@@ -195,4 +198,25 @@ func (it *invocationTrackerImpl) Notify(ctx context.Context, invocationID types.
 	}
 
 	return err
+}
+
+func (it *invocationTrackerImpl) notify(
+	ctx context.Context,
+	notifier notify.Notifier,
+	data *types.NotificationData,
+) error {
+
+	call := func() error {
+		return notifier.Notify(ctx, data)
+	}
+	if !it.config.AsyncNotifications {
+		return call()
+	}
+
+	go func() {
+		if err := call(); err != nil {
+			fmt.Printf("Notification for invocation %s failed: %v", data.Invocation.InvocationID, err)
+		}
+	}()
+	return nil
 }

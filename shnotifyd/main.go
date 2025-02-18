@@ -33,11 +33,10 @@ func initConfig() (*config.ShellTrackerConfig, error) {
 	}
 
 	cfg.InitMode = config.NotifierInitOnStartup
+	cfg.AsyncNotifications = true // to avoid blocking of the user terminal longer than needed. May be customized later
 
 	return cfg, nil
 }
-
-
 
 func run(ctx context.Context) error {
 	cfg, err := initConfig()
@@ -64,7 +63,7 @@ func main() {
 	defer cancel()
 
 	root := cobra.Command{
-		RunE: func (cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			return run(cmd.Context())
 		},
 	}

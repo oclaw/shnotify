@@ -10,7 +10,6 @@ import (
 	"github.com/oclaw/shnotify/types"
 )
 
-
 type telegramNotifier struct {
 	transport *telegram.Telegram // wrapper around telegram bot API that suits my needs
 }
@@ -40,12 +39,11 @@ Command *%s* has finished its execution
 - invocation-id: *%s*
 - execution time: *%d sec*
 `,
-	data.Invocation.ShellLine,
-	data.Invocation.InvocationID,
-	data.ExecTime,
-)
+		data.Invocation.ShellLine,
+		data.Invocation.InvocationID,
+		data.ExecTime,
+	)
 
 	err := tgn.transport.Send(ctx, "shnotify update", mdStr)
-	fmt.Printf("tg invocation %s end: %v", data.Invocation.InvocationID, err)
 	return err
 }

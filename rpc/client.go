@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/oclaw/shnotify/types"
 	rpctypes "github.com/oclaw/shnotify/rpc/types"
+	"github.com/oclaw/shnotify/types"
 )
 
 type Client struct {
@@ -27,7 +27,7 @@ func NewClient(path string) (*Client, error) {
 			},
 		},
 	}
-	return &Client {
+	return &Client{
 		http: httpClient,
 	}, nil
 }
@@ -39,7 +39,7 @@ func (cl *Client) SaveInvocation(ctx context.Context, req *types.InvocationReque
 		(*rpctypes.SaveInvocationRequest)(req),
 		requestContext{
 			method: http.MethodPost,
-			path: "save-invocation",
+			path:   "save-invocation",
 		},
 	)
 	if err != nil {
@@ -49,7 +49,7 @@ func (cl *Client) SaveInvocation(ctx context.Context, req *types.InvocationReque
 }
 
 func (cl *Client) Notify(ctx context.Context, id types.InvocationID) error {
-    _, err := callHTTP[rpctypes.NotifyRequest, any](
+	_, err := callHTTP[rpctypes.NotifyRequest, any](
 		ctx,
 		cl,
 		&rpctypes.NotifyRequest{
@@ -57,7 +57,7 @@ func (cl *Client) Notify(ctx context.Context, id types.InvocationID) error {
 		},
 		requestContext{
 			method: http.MethodPost,
-			path: "notify",
+			path:   "notify",
 		},
 	)
 	if err != nil {
@@ -65,9 +65,10 @@ func (cl *Client) Notify(ctx context.Context, id types.InvocationID) error {
 	}
 	return nil
 }
+
 type requestContext struct {
 	method string
-	path string
+	path   string
 }
 
 func callHTTP[Req, Res any](ctx context.Context, cl *Client, req *Req, reqCtx requestContext) (*Res, error) {

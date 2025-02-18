@@ -16,7 +16,7 @@ type (
 		InvocationID types.InvocationID `json:"invocation_id"`
 	}
 
-	NotifyResponse struct{
+	NotifyResponse struct {
 	}
 
 	ErrResponse struct {

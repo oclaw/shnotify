@@ -33,7 +33,9 @@ func initConfig() (*config.ShellTrackerConfig, error) {
 		}
 	}
 
-	cfg.InitMode = config.NotifierInitOnDemand // TODO needed only for standalone mode
+	// standalone params
+	cfg.InitMode = config.NotifierInitOnDemand
+	cfg.AsyncNotifications = false
 
 	return cfg, nil
 }

@@ -12,6 +12,7 @@ Possible option of integration of shnotify into your zsh config is shown in zsrc
  - [x] Abstract notifiers
  - [x] Abstract storage
  - [x] Implement client-server mode (add shnotifyd service) and move command implementation there
+ - [x] Sync/Async notification
  - [ ] Add logging
  - [ ] Support Linux notifications with CGO libnotify
  - [ ] Support allow lists and ban lists for the programs
