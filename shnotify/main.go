@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/oclaw/shnotify/config"
@@ -31,7 +33,7 @@ func initConfig() (*config.ShellTrackerConfig, error) {
 		}
 	}
 
-	cfg.InitMode = config.NotifierInitOnDemand
+	cfg.InitMode = config.NotifierInitOnDemand // TODO needed only for standalone mode
 
 	return cfg, nil
 }
@@ -128,9 +130,8 @@ func run(ctx context.Context) error {
 }
 
 func main() {
-	// TODO monitor OS signals
 	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
 	// TODO determine and ignore errors caused by absense of the daemon

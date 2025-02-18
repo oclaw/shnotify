@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/oclaw/shnotify/common"
 	"github.com/oclaw/shnotify/config"
 	"github.com/oclaw/shnotify/core"
@@ -56,9 +59,8 @@ func run(ctx context.Context) error {
 }
 
 func main() {
-	// TODO monitor OS signals
 	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
 	root := cobra.Command{

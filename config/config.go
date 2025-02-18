@@ -53,7 +53,7 @@ func DefaultShellTrackerConfig() *ShellTrackerConfig {
 		DirPath:        path.Join(os.TempDir(), dirPath),
 		DeadlineSec:    3,
 		CleanupEnabled: true,
-		RPCSocketName: "/tmp/shnotify-rpc.sock",
+		RPCSocketName: path.Join(os.TempDir(), "shnotify-rpc.sock"),
 		Notifications: []Notification{
 			{
 				Type: types.NotificationCLI,
