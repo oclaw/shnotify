@@ -1,19 +1,15 @@
-package main
+package core
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/oclaw/shnotify/types"
 	"os"
 	"path"
-)
 
-type InvocationStorage interface {
-	Store(ctx context.Context, rec *types.ShellInvocationRecord) error
-	Get(ctx context.Context, id types.InvocationID) (*types.ShellInvocationRecord, error)
-	Erase(ctx context.Context, id types.InvocationID) error
-}
+	"github.com/oclaw/shnotify/common"
+	"github.com/oclaw/shnotify/types"
+)
 
 type fsInvocationStorage struct {
 	dirPath string
@@ -23,7 +19,7 @@ func NewFsInvocationStorage(dirPath string) (InvocationStorage, error) {
 	storage := &fsInvocationStorage{
 		dirPath: dirPath,
 	}
-	if err := os.Mkdir(storage.dirPath, os.ModePerm); Ignore(err, os.ErrExist) != nil {
+	if err := os.Mkdir(storage.dirPath, os.ModePerm); common.IgnoreErr(err, os.ErrExist) != nil {
 		return nil, err
 	}
 
@@ -41,7 +37,7 @@ func (st *fsInvocationStorage) Store(ctx context.Context, rec *types.ShellInvoca
 	}
 
 	filename := fmt.Sprintf("%s.json", rec.InvocationID)
-	file, err := os.OpenFile(path.Join(st.dirPath, filename), os.O_WRONLY | os.O_CREATE, os.ModePerm)
+	file, err := os.OpenFile(path.Join(st.dirPath, filename), os.O_WRONLY|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -72,5 +68,5 @@ func (st *fsInvocationStorage) Get(ctx context.Context, id types.InvocationID) (
 
 func (st *fsInvocationStorage) Erase(ctx context.Context, id types.InvocationID) error {
 	err := os.Remove(fmt.Sprintf("%s.json", id))
-	return Ignore(err, os.ErrNotExist)
+	return common.IgnoreErr(err, os.ErrNotExist)
 }

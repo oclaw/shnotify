@@ -1,10 +1,10 @@
-package main
+package common
 
 import (
 	"errors"
 )
 
-func Ignore(err error, toIgnore ...error) error {
+func IgnoreErr(err error, toIgnore ...error) error {
 	if err == nil {
 		return nil
 	}

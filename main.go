@@ -7,17 +7,21 @@ import (
 	"os"
 	"time"
 
+	"github.com/oclaw/shnotify/common"
+	"github.com/oclaw/shnotify/config"
+	"github.com/oclaw/shnotify/core"
 	"github.com/oclaw/shnotify/types"
+
 	"github.com/spf13/cobra"
 )
 
-func initConfig() (*ShellTrackerConfig, error) {
-	cfg, err := ReadFromDefaultLoc()
+func initConfig() (*config.ShellTrackerConfig, error) {
+	cfg, err := config.ReadFromDefaultLoc()
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			fmt.Printf("config does not exist, will create default one")
-			cfg = DefaultShellTrackerConfig()
-			if err := SaveConfigToDefaultLoc(cfg); err != nil {
+			cfg = config.DefaultShellTrackerConfig()
+			if err := config.SaveConfigToDefaultLoc(cfg); err != nil {
 				fmt.Printf("failed to save config: %v", err)
 				return nil, err
 			}
@@ -27,17 +31,19 @@ func initConfig() (*ShellTrackerConfig, error) {
 		}
 	}
 
+	cfg.InitMode = config.NotifierInitOnDemand // TODO determine if we are running with backend or standalone
+
 	return cfg, nil
 }
 
 // support for shell track start command
-func buildStartInvocationCommand(ctx context.Context, cfg *ShellTrackerConfig) (*cobra.Command, error) {
+func buildStartInvocationCommand(ctx context.Context, cfg *config.ShellTrackerConfig) (*cobra.Command, error) {
 	var (
-		shellLine string
+		shellLine         string
 		shellInvocationId string
 	)
 
-	invokeStarter, err := NewInvocationStarter(cfg, &defaultClock{}, uuidInvocationGen)
+	invokeStarter, err := core.NewInvocationTracker(cfg, &common.DefaultClock{}, core.UUIDInvocationGen)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +51,14 @@ func buildStartInvocationCommand(ctx context.Context, cfg *ShellTrackerConfig) (
 		Use:   "save-invocation",
 		Short: "save invocation of the shell command into the storage and return the external id assigned to the execution",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ret, err := invokeStarter.SaveInvocation(ctx, shellLine, types.InvocationID(shellInvocationId))
+			ret, err := invokeStarter.SaveInvocation(
+				ctx,
+				&types.InvocationRequest{
+					InvocationID: types.InvocationID(shellInvocationId),
+					ShellLine:    shellLine,
+					ParentID:     os.Getppid(),
+				},
+			)
 			if err != nil {
 				return err
 			}
@@ -59,10 +72,10 @@ func buildStartInvocationCommand(ctx context.Context, cfg *ShellTrackerConfig) (
 }
 
 // support for shell track end command
-func buildNotifyCommand(ctx context.Context, cfg *ShellTrackerConfig) (*cobra.Command, error) {
+func buildNotifyCommand(ctx context.Context, cfg *config.ShellTrackerConfig) (*cobra.Command, error) {
 	var invocationID string
 
-	shellTracker, err := NewShellTracker(cfg, &defaultClock{})
+	shellTracker, err := core.NewInvocationTracker(cfg, &common.DefaultClock{}, core.UUIDInvocationGen)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +90,7 @@ func buildNotifyCommand(ctx context.Context, cfg *ShellTrackerConfig) (*cobra.Co
 	return &notifyCommand, nil
 }
 
-func setupRootCommand(ctx context.Context, cfg *ShellTrackerConfig) (*cobra.Command, error) {
+func setupRootCommand(ctx context.Context, cfg *config.ShellTrackerConfig) (*cobra.Command, error) {
 	root := cobra.Command{
 		Use:   os.Args[0],
 		Short: "Shell invocation tracking and notifying utility",

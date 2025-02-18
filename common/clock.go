@@ -1,4 +1,4 @@
-package main
+package common
 
 import "time"
 
@@ -6,9 +6,9 @@ type Clock interface {
 	NowUnix() int64
 }
 
-type defaultClock struct{}
+type DefaultClock struct{}
 
-func (*defaultClock) NowUnix() int64 {
+func (*DefaultClock) NowUnix() int64 {
 	now := time.Now()
 	return now.Unix()
 }

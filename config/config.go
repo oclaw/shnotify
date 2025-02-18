@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"os"
@@ -17,6 +17,13 @@ type Notification struct {
 	Conditions NotificationConditions `yaml:"conditions"`
 }
 
+type NotifierInitMode int
+
+const (
+	NotifierInitOnStartup NotifierInitMode = 1
+	NotifierInitOnDemand  NotifierInitMode = 2
+)
+
 type ShellTrackerConfig struct {
 	DirPath             string           `yaml:"dir_path"`               // directory to store shell invocations
 	CleanupEnabled      bool             `yaml:"cleanup_enabled"`        // if enabled service will manually delete the invocations
@@ -25,6 +32,8 @@ type ShellTrackerConfig struct {
 	DeadlineSec         int64            `yaml:"deadline_sec"`
 	Notifications       []Notification   `yaml:"notifications"`
 	NotifierSettings    NotifierSettings `yaml:"notifier_settings,omitempty"`
+
+	InitMode NotifierInitMode `yaml:"-"`
 
 	// TODO garbage collection settings
 }
@@ -51,6 +60,7 @@ func DefaultShellTrackerConfig() *ShellTrackerConfig {
 				},
 			},
 		},
+		InitMode: NotifierInitOnStartup,
 	}
 }
 
