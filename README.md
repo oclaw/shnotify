@@ -11,10 +11,11 @@ Possible option of integration of shnotify into your zsh config is shown in zsrc
  - [x] Support notifications with Telegram 
  - [x] Abstract notifiers
  - [x] Abstract storage
- - [ ] Implement client-server mode (add shnotifyd service) and move command implementation there
+ - [x] Implement client-server mode (add shnotifyd service) and move command implementation there
+ - [ ] Add logging
  - [ ] Support Linux notifications with CGO libnotify
  - [ ] Support allow lists and ban lists for the programs
- - [ ] Support direct call to setup a hook on a single command execution (without setting up shell hook)
+ - [ ] Support direct call to monitor a single command execution (without setting up shell hook)
  - [ ] Support non-file storage for invocations (sqlite for example)
  - [ ] Scan executing line for secrets and prevent them to be stored and included into the notification
  - [ ] Implement autocleaner for storage
