@@ -13,9 +13,10 @@ Possible option of integration of shnotify into your zsh config is shown in zsrc
  - [x] Abstract storage
  - [x] Implement client-server mode (add shnotifyd service) and move command implementation there
  - [x] Sync/Async notification
+ - [ ] Add machine id to the stored invocation
  - [ ] Add logging
  - [ ] Support Linux notifications with CGO libnotify
- - [ ] Support allow lists and ban lists for the programs
+ - [ ] Support allow lists and ban lists for the programs (add shell parser)
  - [ ] Support direct call to monitor a single command execution (without setting up shell hook)
  - [ ] Support non-file storage for invocations (sqlite for example)
  - [ ] Scan executing line for secrets and prevent them to be stored and included into the notification
