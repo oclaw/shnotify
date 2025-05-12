@@ -20,6 +20,7 @@ func InvocationGenFromStringer[T fmt.Stringer](gen func() (T, error)) Invocation
 
 type InvocationRequest struct {
 	InvocationID InvocationID `json:"invocation_id,omitempty"`
+	MachineID    string       `json:"machine_id,omitempty"`
 	ParentID     int          `json:"ppid"`
 	ShellLine    string       `json:"cmd_text"`
 }
@@ -27,6 +28,7 @@ type InvocationRequest struct {
 type ShellInvocationRecord struct {
 	InvocationID InvocationID `json:"invocation_id"`
 	ParentID     int          `json:"ppid"`
+	MachineID    string       `json:"machine_id"`
 	ShellLine    string       `json:"cmd_text"`
 	Timestamp    int64        `json:"started_at"`
 }

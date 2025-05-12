@@ -47,6 +47,11 @@ func buildStartInvocationCommand(tracker core.InvocationTracker) (*cobra.Command
 		shellInvocationId string
 	)
 
+	machineID, err := os.Hostname()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get machine id: %w", err)
+	}
+
 	saveInvocationCommand := &cobra.Command{
 		Use:   "save-invocation",
 		Short: "save invocation of the shell command into the storage and return the external id assigned to the execution",
@@ -56,6 +61,7 @@ func buildStartInvocationCommand(tracker core.InvocationTracker) (*cobra.Command
 				&types.InvocationRequest{
 					InvocationID: types.InvocationID(shellInvocationId),
 					ShellLine:    shellLine,
+					MachineID:    machineID,
 					ParentID:     os.Getppid(),
 				},
 			)

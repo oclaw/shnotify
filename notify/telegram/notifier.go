@@ -36,10 +36,12 @@ func (tgn *telegramNotifier) Notify(ctx context.Context, data *types.Notificatio
 
 	mdStr := fmt.Sprintf(`
 Command *%s* has finished its execution
+- machine: *%s*
 - invocation-id: *%s*
 - execution time: *%d sec*
 `,
 		data.Invocation.ShellLine,
+		data.Invocation.MachineID,
 		data.Invocation.InvocationID,
 		data.ExecTime,
 	)

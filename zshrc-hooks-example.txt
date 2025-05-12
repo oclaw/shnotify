@@ -1,8 +1,10 @@
+
+# TRIVIAL EXAMPLE
+
 NOTIFIER=~/.shnotify/shnotify
 
 preexec() {
 	__ZSH_NOTIFY_CALL_CMD=$($NOTIFIER save-invocation --shell-line="$1")
-	#TODO handle non-zero retcode
 }
 
 precmd() {
@@ -10,4 +12,31 @@ precmd() {
 		$NOTIFIER notify --invocation-id=$__ZSH_NOTIFY_CALL_CMD
 		unset __ZSH_NOTIFY_CALL_CMD
 	fi
+}
+
+
+# CONDITIONAL EXAMPLE
+
+NOTIFIER=/home/oclaw/projects/pet/shnotify/build/shnotify
+SHNOTIFY_ENABLED=0 #set to true if you want to enable tracking for each shell by default
+
+shnotify_enable() {
+        export SHNOTIFY_ENABLED=1
+}
+
+shnotify_disable() {
+        export SHNOTIFY_DISABLED=0
+}
+
+preexec() {
+        if (( SHNOTIFY_ENABLED )); then
+                __ZSH_NOTIFY_CALL_CMD=$($NOTIFIER save-invocation --shell-line="$1")
+        fi
+}
+
+precmd() {
+        if [ -n "$__ZSH_NOTIFY_CALL_CMD" ]; then
+                $NOTIFIER notify --invocation-id=$__ZSH_NOTIFY_CALL_CMD
+                unset __ZSH_NOTIFY_CALL_CMD
+        fi
 }

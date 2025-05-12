@@ -82,7 +82,7 @@ func callHTTP[Req, Res any](ctx context.Context, cl *Client, req *Req, reqCtx re
 	remoteURL.Path = reqCtx.path
 	remoteURL.Scheme = "http"
 
-	httpReq, err := http.NewRequest(reqCtx.method, remoteURL.String(), bytes.NewReader(payload))
+	httpReq, err := http.NewRequestWithContext(ctx, reqCtx.method, remoteURL.String(), bytes.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}

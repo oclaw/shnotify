@@ -118,6 +118,7 @@ func (it *invocationTrackerImpl) SaveInvocation(
 	rec := types.ShellInvocationRecord{
 		InvocationID: req.InvocationID,
 		ParentID:     req.ParentID,
+		MachineID:    req.MachineID,
 		Timestamp:    it.clock.NowUnix(),
 	}
 
